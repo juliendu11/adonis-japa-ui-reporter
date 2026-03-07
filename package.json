@@ -1,0 +1,45 @@
+{
+  "name": "@juliendu11/japa-ui-reporter",
+  "version": "0.0.1",
+  "description": "",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./build/index.js",
+      "types": "./build/index.d.ts"
+    }
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc && cp -r src/ui/public build/ui/public"
+  },
+  "keywords": [
+    "japa",
+    "reporter",
+    "ui",
+    "adonisjs",
+    "testing"
+  ],
+  "author": "juliendu11",
+  "license": "MIT",
+  "dependencies": {
+    "@japa/core": "^9.0.1",
+    "@japa/runner": "^3.1.4",
+    "open": "^11.0.0",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@adonisjs/tsconfig": "^2.0.0",
+    "@types/node": "^25.3.5",
+    "@types/ws": "^8.18.1",
+    "typescript": "^5.9.3"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/juliendu11/adonis-japa-ui-reporter"
+  }
+}
