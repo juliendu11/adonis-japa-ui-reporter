@@ -1,3 +1,5 @@
+[![NPM](https://nodei.co/npm/@juliendu11/japa-ui-reporter.png?compact=true)](https://npmjs.org/package/@juliendu11/japa-ui-reporter)
+
 # Japa UI reporter
 
 Frustrated by the various default reporting tools, I created my own.
