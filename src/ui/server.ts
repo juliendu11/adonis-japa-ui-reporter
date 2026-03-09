@@ -2,10 +2,11 @@ import http from "node:http";
 import net from "node:net";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {WebSocketServer, WebSocket} from "ws";
 import type {CreateServerOptions} from "../types.js";
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
 export default function createServer(options: CreateServerOptions) {
@@ -14,7 +15,6 @@ export default function createServer(options: CreateServerOptions) {
 
     // HTTP server to serve the dashboard
     const httpServer = http.createServer((req, res) => {
-        console.log(req.url)
         if (req.url === '/' || req.url === '/index.html') {
             const filePath = path.join(__dirname, 'public', 'index.html');
             fs.readFile(filePath, (err, data) => {
