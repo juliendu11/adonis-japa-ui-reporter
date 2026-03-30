@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Test Dashboard</title>
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
@@ -44,12 +48,22 @@
             transition: background 0.3s;
         }
 
-        #status-dot.connected { background: #22c55e; }
-        #status-dot.running { background: #f59e0b; animation: pulse 1s infinite; }
+        #status-dot.connected {
+            background: #22c55e;
+        }
+
+        #status-dot.running {
+            background: #f59e0b;
+            animation: pulse 1s infinite;
+        }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.4;
+            }
         }
 
         #summary {
@@ -80,9 +94,17 @@
             letter-spacing: 0.05em;
         }
 
-        .stat.pass .stat-value { color: #22c55e; }
-        .stat.fail .stat-value { color: #ef4444; }
-        .stat.total .stat-value { color: #94a3b8; }
+        .stat.pass .stat-value {
+            color: #22c55e;
+        }
+
+        .stat.fail .stat-value {
+            color: #ef4444;
+        }
+
+        .stat.total .stat-value {
+            color: #94a3b8;
+        }
 
         #groups {
             display: flex;
@@ -107,7 +129,9 @@
             user-select: none;
         }
 
-        .group-header:hover { background: #2c304d; }
+        .group-header:hover {
+            background: #2c304d;
+        }
 
         .group-title {
             font-weight: 600;
@@ -128,8 +152,15 @@
             font-weight: 600;
         }
 
-        .badge.pass { background: #14532d; color: #86efac; }
-        .badge.fail { background: #450a0a; color: #fca5a5; }
+        .badge.pass {
+            background: #14532d;
+            color: #86efac;
+        }
+
+        .badge.fail {
+            background: #450a0a;
+            color: #fca5a5;
+        }
 
         .group-tests {
             list-style: none;
@@ -144,7 +175,9 @@
             transition: background 0.15s;
         }
 
-        .test:hover { background: #242840; }
+        .test:hover {
+            background: #242840;
+        }
 
         .test-icon {
             flex-shrink: 0;
@@ -232,8 +265,13 @@
             border-bottom: 1px solid #2d3348;
         }
 
-        .diff-legend-removed { color: #fca5a5; }
-        .diff-legend-added   { color: #86efac; }
+        .diff-legend-removed {
+            color: #fca5a5;
+        }
+
+        .diff-legend-added {
+            color: #86efac;
+        }
 
         .diff-line {
             padding: 1px 0.5rem;
@@ -244,9 +282,19 @@
             line-height: 1.5;
         }
 
-        .diff-line.removed  { background: #3b0a0a; color: #fca5a5; }
-        .diff-line.added    { background: #052e16; color: #86efac; }
-        .diff-line.unchanged { color: #475569; }
+        .diff-line.removed {
+            background: #3b0a0a;
+            color: #fca5a5;
+        }
+
+        .diff-line.added {
+            background: #052e16;
+            color: #86efac;
+        }
+
+        .diff-line.unchanged {
+            color: #475569;
+        }
     </style>
 </head>
 <body>
@@ -291,7 +339,7 @@
 
     // groupTitle -> { element, tests: [] }
     const groups = new Map();
-    let stats = { total: 0, pass: 0, fail: 0 };
+    let stats = {total: 0, pass: 0, fail: 0};
 
     function setStatus(state, text) {
         statusDot.className = state;
@@ -336,7 +384,7 @@
         groupEl.appendChild(testList);
         groupsContainer.appendChild(groupEl);
 
-        const entry = { element: groupEl, header, badges, testList, pass: 0, fail: 0 };
+        const entry = {element: groupEl, header, badges, testList, pass: 0, fail: 0};
         groups.set(groupTitle, entry);
         return entry;
     }
@@ -374,15 +422,15 @@
                 const av = JSON.stringify(actual[key], null, 2);
                 const ev = JSON.stringify(expected[key], null, 2);
                 if (av === ev) {
-                    lines.push({ type: 'unchanged', text: `  ${key}: ${av}` });
+                    lines.push({type: 'unchanged', text: `  ${key}: ${av}`});
                 } else {
-                    lines.push({ type: 'removed',   text: `- ${key}: ${av}` });
-                    lines.push({ type: 'added',     text: `+ ${key}: ${ev}` });
+                    lines.push({type: 'removed', text: `- ${key}: ${av}`});
+                    lines.push({type: 'added', text: `+ ${key}: ${ev}`});
                 }
             } else if (hasA) {
-                lines.push({ type: 'removed', text: `- ${key}: ${JSON.stringify(actual[key], null, 2)}` });
+                lines.push({type: 'removed', text: `- ${key}: ${JSON.stringify(actual[key], null, 2)}`});
             } else {
-                lines.push({ type: 'added',   text: `+ ${key}: ${JSON.stringify(expected[key], null, 2)}` });
+                lines.push({type: 'added', text: `+ ${key}: ${JSON.stringify(expected[key], null, 2)}`});
             }
         }
 
@@ -394,7 +442,7 @@
         legend.innerHTML = '<span class="diff-legend-removed">- actual</span><span class="diff-legend-added">+ expected</span>';
         block.appendChild(legend);
 
-        for (const { type, text } of lines) {
+        for (const {type, text} of lines) {
             const row = document.createElement('div');
             row.className = `diff-line ${type}`;
             row.textContent = text;
@@ -411,8 +459,13 @@
         const passed = !data.hasError;
 
         stats.total++;
-        if (passed) { stats.pass++; group.pass++; }
-        else { stats.fail++; group.fail++; }
+        if (passed) {
+            stats.pass++;
+            group.pass++;
+        } else {
+            stats.fail++;
+            group.fail++;
+        }
 
         updateStats();
         updateGroupBadges(group);
@@ -473,10 +526,11 @@
         group.testList.appendChild(li);
 
         // Scroll to keep latest visible
-        li.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        li.scrollIntoView({behavior: 'smooth', block: 'nearest'});
     }
 
     function sortResults() {
+        console.log('Sort in progress')
         // Sort tests within each group: failed first
         for (const group of groups.values()) {
             const items = [...group.testList.children];
@@ -495,7 +549,7 @@
 
     function clearResults() {
         groups.clear();
-        stats = { total: 0, pass: 0, fail: 0 };
+        stats = {total: 0, pass: 0, fail: 0};
         updateStats();
         groupsContainer.innerHTML = '';
         groupsContainer.appendChild(emptyState);
@@ -509,7 +563,11 @@
 
         ws.onmessage = (event) => {
             let msg;
-            try { msg = JSON.parse(event.data); } catch { return; }
+            try {
+                msg = JSON.parse(event.data);
+            } catch {
+                return;
+            }
 
             if (msg.type === 'run:start') {
                 clearResults();
@@ -525,8 +583,11 @@
         };
 
         ws.onclose = () => {
+            sortResults()
+
             setStatus('', 'Disconnected — retrying...');
             setTimeout(connect, 2000);
+
         };
 
         ws.onerror = () => ws.close();
