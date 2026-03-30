@@ -295,6 +295,47 @@
         .diff-line.unchanged {
             color: #475569;
         }
+
+        #filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-btn {
+            padding: 0.35rem 0.9rem;
+            border-radius: 999px;
+            border: 1px solid #2d3348;
+            background: #1e2130;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+
+        .filter-btn:hover {
+            background: #252840;
+            color: #e2e8f0;
+        }
+
+        .filter-btn.active {
+            border-color: #6366f1;
+            background: #2d2f5e;
+            color: #c7d2fe;
+        }
+
+        .filter-btn.active.pass {
+            border-color: #22c55e;
+            background: #14532d;
+            color: #86efac;
+        }
+
+        .filter-btn.active.fail {
+            border-color: #ef4444;
+            background: #450a0a;
+            color: #fca5a5;
+        }
     </style>
 </head>
 <body>
@@ -321,6 +362,12 @@
     </div>
 </div>
 
+<div id="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn pass" data-filter="pass">Passed</button>
+    <button class="filter-btn fail" data-filter="fail">Failed</button>
+</div>
+
 <div id="groups">
     <div id="empty">
         <p>&#9634;</p>
@@ -340,6 +387,33 @@
     // groupTitle -> { element, tests: [] }
     const groups = new Map();
     let stats = {total: 0, pass: 0, fail: 0};
+    let activeFilter = 'all';
+
+    function applyFilter() {
+        for (const group of groups.values()) {
+            let visibleCount = 0;
+            for (const li of group.testList.children) {
+                const isFailed = li.dataset.failed === '1';
+                const visible =
+                    activeFilter === 'all' ||
+                    (activeFilter === 'pass' && !isFailed) ||
+                    (activeFilter === 'fail' && isFailed);
+                li.style.display = visible ? '' : 'none';
+                if (visible) visibleCount++;
+            }
+            group.element.style.display = visibleCount === 0 ? 'none' : '';
+        }
+    }
+
+    document.getElementById('filters').addEventListener('click', (e) => {
+        const btn = e.target.closest('.filter-btn');
+        if (!btn) return;
+        activeFilter = btn.dataset.filter;
+        for (const b of document.querySelectorAll('.filter-btn')) {
+            b.classList.toggle('active', b === btn);
+        }
+        applyFilter();
+    });
 
     function setStatus(state, text) {
         statusDot.className = state;
@@ -525,8 +599,16 @@
         li.appendChild(body);
         group.testList.appendChild(li);
 
+        // Apply current filter to the new test
+        const isFailed = !passed;
+        const visible =
+            activeFilter === 'all' ||
+            (activeFilter === 'pass' && !isFailed) ||
+            (activeFilter === 'fail' && isFailed);
+        li.style.display = visible ? '' : 'none';
+
         // Scroll to keep latest visible
-        li.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+        if (visible) li.scrollIntoView({behavior: 'smooth', block: 'nearest'});
     }
 
     function sortResults() {
@@ -545,6 +627,7 @@
             return (bEntry?.fail ?? 0) - (aEntry?.fail ?? 0);
         });
         for (const el of groupEls) groupsContainer.appendChild(el);
+        applyFilter();
     }
 
     function clearResults() {
@@ -554,6 +637,10 @@
         groupsContainer.innerHTML = '';
         groupsContainer.appendChild(emptyState);
         emptyState.style.display = '';
+        activeFilter = 'all';
+        for (const b of document.querySelectorAll('.filter-btn')) {
+            b.classList.toggle('active', b.dataset.filter === 'all');
+        }
     }
 
     function connect() {
@@ -579,12 +666,13 @@
             } else if (msg.type === 'run:end') {
                 const failText = stats.fail > 0 ? ` — ${stats.fail} failed` : '';
                 setStatus('connected', `Done: ${stats.pass}/${stats.total} passed${failText}`);
+                window.scrollTo({top: 0, behavior: 'smooth'});
             }
         };
 
         ws.onclose = () => {
-            sortResults()
-
+            sortResults();
+            window.scrollTo({top: 0, behavior: 'smooth'});
             setStatus('', 'Disconnected — retrying...');
             setTimeout(connect, 2000);
 
