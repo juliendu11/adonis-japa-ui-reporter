@@ -14,6 +14,7 @@ export default class UIReporter extends BaseReporter {
 
     private client: net.Socket = new net.Socket()
     private options: UIReporterOptions
+    private stopServer: (() => void) | null = null
 
     constructor(options?: UIReporterOptions) {
         super(options)
@@ -56,15 +57,13 @@ export default class UIReporter extends BaseReporter {
         const uiPort = this.options?.ui?.port ?? DEFAULT_UI_PORT
         const reporterPort = this.options?.reporter?.port ?? DEFAULT_REPORTER_PORT
 
-        createServer({
+        const { stop } = createServer({
             ui: {port: uiPort},
             reporter: {port: reporterPort}
         })
+        this.stopServer = stop
 
-        const HOST = '127.0.0.1'
-        const PORT = reporterPort
-
-        this.client.connect(PORT, HOST, () => {
+        this.client.connect(reporterPort, '127.0.0.1', () => {
             if (this.client) {
                 this.client.write('CLEAR\n')
             }
@@ -76,5 +75,11 @@ export default class UIReporter extends BaseReporter {
     }
 
     async end() {
+        if (this.client) {
+            this.client.write('END\n')
+            this.client.end()
+        }
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        this.stopServer?.()
     }
 }

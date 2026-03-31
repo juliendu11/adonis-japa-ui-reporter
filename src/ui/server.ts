@@ -109,6 +109,18 @@ export default function createServer(options: CreateServerOptions) {
         });
     });
 
+    httpServer.on('error', (err: NodeJS.ErrnoException) => {
+        if (err.code !== 'EADDRINUSE') {
+            console.error('[HTTP] Server error:', err.message);
+        }
+    });
+
+    tcpServer.on('error', (err: NodeJS.ErrnoException) => {
+        if (err.code !== 'EADDRINUSE') {
+            console.error('[TCP] Server error:', err.message);
+        }
+    });
+
     httpServer.listen(options.ui.port, () => {
         console.log(`[HTTP] Dashboard available at http://localhost:${options.ui.port}`);
     });
@@ -119,17 +131,11 @@ export default function createServer(options: CreateServerOptions) {
 
     const stop = () => {
         console.log('[SERVER] Shutting down...');
-        tcpServer.close(() => {
-            console.log('[TCP] Server closed');
-        });
-        httpServer.close(() => {
-            console.log('[HTTP] Server closed');
-        });
         for (const client of dashboardClients) {
             client.close();
         }
-        tcpServer.close()
-        httpServer.close()
+        tcpServer.close(() => console.log('[TCP] Server closed'));
+        httpServer.close(() => console.log('[HTTP] Server closed'));
     }
 
     return {
