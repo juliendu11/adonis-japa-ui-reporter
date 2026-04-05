@@ -57,11 +57,15 @@ export default class UIReporter extends BaseReporter {
         const uiPort = this.options?.ui?.port ?? DEFAULT_UI_PORT
         const reporterPort = this.options?.reporter?.port ?? DEFAULT_REPORTER_PORT
 
-        const { stop } = createServer({
+        const {stop, listeners} = createServer({
             ui: {port: uiPort},
             reporter: {port: reporterPort}
         })
         this.stopServer = stop
+
+        listeners.onReady = async () => {
+            await open("http://localhost:" + uiPort)
+        }
 
         this.client.connect(reporterPort, '127.0.0.1', () => {
             if (this.client) {
@@ -69,7 +73,6 @@ export default class UIReporter extends BaseReporter {
             }
         })
 
-        await open("http://localhost:" + uiPort)
 
         await new Promise((resolve) => setTimeout(resolve, 1000))
     }

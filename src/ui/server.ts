@@ -2,7 +2,7 @@ import http from "node:http";
 import net from "node:net";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import {fileURLToPath} from "node:url";
 import {WebSocketServer, WebSocket} from "ws";
 import type {CreateServerOptions} from "../types.js";
 
@@ -12,6 +12,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default function createServer(options: CreateServerOptions) {
     // Connected dashboard clients
     const dashboardClients = new Set<WebSocket>()
+
+    const listeners: {
+        onReady: (() => void) | null
+    } = {
+        onReady: null
+    }
 
     // HTTP server to serve the dashboard
     const httpServer = http.createServer((req, res) => {
@@ -32,8 +38,15 @@ export default function createServer(options: CreateServerOptions) {
         }
     });
 
+
     // WebSocket server for real-time push to dashboard
     const wss = new WebSocketServer({server: httpServer});
+
+    wss.on('listening', () => {
+        if (listeners && listeners.onReady) {
+            listeners.onReady()
+        }
+    })
 
     wss.on('connection', (ws) => {
         console.log('[WS] Dashboard client connected');
@@ -140,7 +153,8 @@ export default function createServer(options: CreateServerOptions) {
 
     return {
         url: `http://localhost:${options.ui.port}/`,
-        stop
+        stop,
+        listeners
     }
 }
 
