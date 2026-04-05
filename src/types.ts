@@ -7,7 +7,8 @@ export type UIReporterOptions = BaseReporterOptions & {
     reporter?: {
         port: number
     },
-    killPortsInUse?: boolean
+    killPortsInUse?: boolean,
+    livePreview?: boolean
 }
 
 export type CreateServerOptions = {
@@ -16,5 +17,6 @@ export type CreateServerOptions = {
     },
     reporter: {
         port: number
-    }
+    },
+    livePreview: boolean
 }

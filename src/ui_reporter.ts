@@ -71,14 +71,17 @@ export class UIReporter extends BaseReporter {
             this.#killPort(reporterPort)
         }
 
+        const livePreview = this.#options?.livePreview ?? true
+
         const {stop, listeners} = createServer({
             ui: {port: uiPort},
-            reporter: {port: reporterPort}
+            reporter: {port: reporterPort},
+            livePreview
         })
         this.#stopServer = stop
 
         listeners.onReady = async ({websocket, tcp}) => {
-            if (websocket && tcp) {
+            if (livePreview && websocket && tcp) {
                 await open("http://localhost:" + uiPort)
             }
         }

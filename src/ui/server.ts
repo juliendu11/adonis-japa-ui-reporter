@@ -580,8 +580,8 @@ export default function createServer(options: CreateServerOptions) {
         return reportPath
     }
 
-    // HTTP server to serve the dashboard
-    const httpServer = http.createServer((req, res) => {
+    // HTTP server to serve the dashboard (only when livePreview is enabled)
+    const httpServer = options.livePreview ? http.createServer((req, res) => {
         if (req.url === '/' || req.url === '/index.html') {
             const filePath = path.join(__dirname, 'public', 'index.html');
             fs.readFile(filePath, (err, data) => {
@@ -605,42 +605,43 @@ export default function createServer(options: CreateServerOptions) {
             res.writeHead(404);
             res.end('Not found');
         }
-    });
+    }) : null;
 
+    if (httpServer) {
+        // WebSocket server for real-time push to dashboard
+        const wss = new WebSocketServer({server: httpServer});
 
-    // WebSocket server for real-time push to dashboard
-    const wss = new WebSocketServer({server: httpServer});
-
-    wss.on('listening', () => {
-        state.websocket = true
-        if (listeners && listeners.onReady) {
-            listeners.onReady(state)
-        }
-    })
-
-    wss.on('connection', (ws) => {
-        console.log('[WS] Dashboard client connected');
-        dashboardClients.add(ws);
-
-        // Replay accumulated state for late-joining clients
-        if (runState.started) {
-            ws.send(JSON.stringify({type: 'run:start'}));
-            for (const result of runState.results) {
-                ws.send(JSON.stringify({type: 'test:result', data: result}));
+        wss.on('listening', () => {
+            state.websocket = true
+            if (listeners && listeners.onReady) {
+                listeners.onReady(state)
             }
-            if (runState.sorted) {
-                ws.send(JSON.stringify({type: 'run:sort'}));
-            }
-            if (runState.ended) {
-                ws.send(JSON.stringify({type: 'run:end'}));
-            }
-        }
+        })
 
-        ws.on('close', () => {
-            dashboardClients.delete(ws);
-            console.log('[WS] Dashboard client disconnected');
+        wss.on('connection', (ws) => {
+            console.log('[WS] Dashboard client connected');
+            dashboardClients.add(ws);
+
+            // Replay accumulated state for late-joining clients
+            if (runState.started) {
+                ws.send(JSON.stringify({type: 'run:start'}));
+                for (const result of runState.results) {
+                    ws.send(JSON.stringify({type: 'test:result', data: result}));
+                }
+                if (runState.sorted) {
+                    ws.send(JSON.stringify({type: 'run:sort'}));
+                }
+                if (runState.ended) {
+                    ws.send(JSON.stringify({type: 'run:end'}));
+                }
+            }
+
+            ws.on('close', () => {
+                dashboardClients.delete(ws);
+                console.log('[WS] Dashboard client disconnected');
+            });
         });
-    });
+    }
 
     function broadcast(data: { type: string, data?: any, url?: string }) {
         const message = JSON.stringify(data);
@@ -737,20 +738,25 @@ export default function createServer(options: CreateServerOptions) {
         }
     })
 
-    httpServer.on('error', (err: NodeJS.ErrnoException) => {
-        if (err.code !== 'EADDRINUSE') {
-            console.error('[HTTP] Server error:', err.message);
-        }
-    });
+    if (httpServer) {
+        httpServer.on('error', (err: NodeJS.ErrnoException) => {
+            if (err.code !== 'EADDRINUSE') {
+                console.error('[HTTP] Server error:', err.message);
+            }
+        });
+
+        httpServer.listen(options.ui.port, () => {
+            console.log(`[HTTP] Dashboard available at http://localhost:${options.ui.port}`);
+        });
+    } else {
+        // No live preview: mark websocket as ready immediately so onReady fires via TCP
+        state.websocket = true
+    }
 
     tcpServer.on('error', (err: NodeJS.ErrnoException) => {
         if (err.code !== 'EADDRINUSE') {
             console.error('[TCP] Server error:', err.message);
         }
-    });
-
-    httpServer.listen(options.ui.port, () => {
-        console.log(`[HTTP] Dashboard available at http://localhost:${options.ui.port}`);
     });
 
     tcpServer.listen(options.reporter.port, () => {
@@ -763,11 +769,13 @@ export default function createServer(options: CreateServerOptions) {
             client.close();
         }
         tcpServer.close(() => console.log('[TCP] Server closed'));
-        httpServer.close(() => console.log('[HTTP] Server closed'));
+        if (httpServer) {
+            httpServer.close(() => console.log('[HTTP] Server closed'));
+        }
     }
 
     return {
-        url: `http://localhost:${options.ui.port}/`,
+        url: options.livePreview ? `http://localhost:${options.ui.port}/` : null,
         stop,
         listeners
     }
