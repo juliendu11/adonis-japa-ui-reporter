@@ -1,5 +1,5 @@
 import {NamedReporterContract} from "@japa/runner/types";
-import UIReporter from "./ui_reporter.js";
+import {UIReporter} from "./ui_reporter.js";
 import type {UIReporterOptions} from "./types.js";
 
 export const ui: (options?: UIReporterOptions) => NamedReporterContract = (options) => {

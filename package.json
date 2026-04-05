@@ -26,10 +26,12 @@
   "author": "juliendu11",
   "license": "MIT",
   "dependencies": {
-    "@japa/core": "^9.0.1",
-    "@japa/runner": "^3.1.4",
     "open": "^11.0.0",
     "ws": "^8.19.0"
+  },
+  "peerDependencies": {
+    "@japa/core": "^9.0.1",
+    "@japa/runner": "^3.1.4"
   },
   "devDependencies": {
     "@adonisjs/tsconfig": "^2.0.0",

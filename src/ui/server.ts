@@ -8,15 +8,25 @@ import type {CreateServerOptions} from "../types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+type State = {
+    tcp: boolean,
+    websocket: boolean
+}
+
 
 export default function createServer(options: CreateServerOptions) {
     // Connected dashboard clients
     const dashboardClients = new Set<WebSocket>()
 
     const listeners: {
-        onReady: (() => void) | null
+        onReady: ((state: State) => void) | null
     } = {
         onReady: null
+    }
+
+    const state: State = {
+        tcp: false,
+        websocket: false
     }
 
     // HTTP server to serve the dashboard
@@ -43,8 +53,9 @@ export default function createServer(options: CreateServerOptions) {
     const wss = new WebSocketServer({server: httpServer});
 
     wss.on('listening', () => {
+        state.websocket = true
         if (listeners && listeners.onReady) {
-            listeners.onReady()
+            listeners.onReady(state)
         }
     })
 
@@ -121,6 +132,13 @@ export default function createServer(options: CreateServerOptions) {
             console.error('[TCP] Socket error:', err.message);
         });
     });
+
+    tcpServer.on('listening', () => {
+        state.tcp = true
+        if (listeners && listeners.onReady) {
+            listeners.onReady(state)
+        }
+    })
 
     httpServer.on('error', (err: NodeJS.ErrnoException) => {
         if (err.code !== 'EADDRINUSE') {

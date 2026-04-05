@@ -6,7 +6,8 @@ export type UIReporterOptions = BaseReporterOptions & {
     },
     reporter?: {
         port: number
-    }
+    },
+    killPortsInUse?: boolean
 }
 
 export type CreateServerOptions = {
