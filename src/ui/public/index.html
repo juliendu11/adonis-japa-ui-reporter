@@ -646,7 +646,16 @@
     function connect() {
         const ws = new WebSocket(`ws://${location.host}`);
 
-        ws.onopen = () => setStatus('connected', 'Connected');
+        const connectionTimeout = setTimeout(() => {
+            if (ws.readyState !== WebSocket.OPEN) {
+                ws.close();
+            }
+        }, 5000);
+
+        ws.onopen = () => {
+            clearTimeout(connectionTimeout);
+            setStatus('connected', 'Connected');
+        };
 
         ws.onmessage = (event) => {
             let msg;
@@ -671,11 +680,11 @@
         };
 
         ws.onclose = () => {
+            clearTimeout(connectionTimeout);
             sortResults();
             window.scrollTo({top: 0, behavior: 'smooth'});
             setStatus('', 'Disconnected — retrying...');
             setTimeout(connect, 2000);
-
         };
 
         ws.onerror = () => ws.close();
