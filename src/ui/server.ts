@@ -29,6 +29,19 @@ export default function createServer(options: CreateServerOptions) {
         websocket: false
     }
 
+    // Accumulated run state for late-joining clients
+    const runState: {
+        started: boolean
+        results: any[]
+        sorted: boolean
+        ended: boolean
+    } = {
+        started: false,
+        results: [],
+        sorted: false,
+        ended: false,
+    }
+
     // HTTP server to serve the dashboard
     const httpServer = http.createServer((req, res) => {
         if (req.url === '/' || req.url === '/index.html') {
@@ -62,6 +75,21 @@ export default function createServer(options: CreateServerOptions) {
     wss.on('connection', (ws) => {
         console.log('[WS] Dashboard client connected');
         dashboardClients.add(ws);
+
+        // Replay accumulated state for late-joining clients
+        if (runState.started) {
+            ws.send(JSON.stringify({type: 'run:start'}));
+            for (const result of runState.results) {
+                ws.send(JSON.stringify({type: 'test:result', data: result}));
+            }
+            if (runState.sorted) {
+                ws.send(JSON.stringify({type: 'run:sort'}));
+            }
+            if (runState.ended) {
+                ws.send(JSON.stringify({type: 'run:end'}));
+            }
+        }
+
         ws.on('close', () => {
             dashboardClients.delete(ws);
             console.log('[WS] Dashboard client disconnected');
@@ -82,6 +110,10 @@ export default function createServer(options: CreateServerOptions) {
         console.log(`[TCP] Reporter connected from ${socket.remoteAddress}`);
 
         // Notify dashboard that a new test run started
+        runState.started = true;
+        runState.results = [];
+        runState.sorted = false;
+        runState.ended = false;
         broadcast({type: 'run:start'});
 
         let buffer: any = '';
@@ -96,17 +128,22 @@ export default function createServer(options: CreateServerOptions) {
                 if (!trimmed) continue;
                 if (trimmed === 'CLEAR') {
                     console.log('[TCP] CLEAR received — resetting dashboard');
+                    runState.results = [];
+                    runState.sorted = false;
+                    runState.ended = false;
                     broadcast({type: 'run:start'});
                     continue;
                 }
                 if (trimmed === 'END') {
                     console.log('[TCP] END received — sorting failed tests first');
+                    runState.sorted = true;
                     broadcast({type: 'run:sort'});
                     continue;
                 }
                 try {
                     const testResult = JSON.parse(trimmed);
                     console.log(`[TCP] Test result: ${testResult.title} — ${testResult.hasError ? 'FAIL' : 'PASS'}`);
+                    runState.results.push(testResult);
                     broadcast({type: 'test:result', data: testResult});
                 } catch (e) {
                     console.warn('[TCP] Failed to parse line:', trimmed);
@@ -119,11 +156,14 @@ export default function createServer(options: CreateServerOptions) {
             if (buffer.trim()) {
                 try {
                     const testResult = JSON.parse(buffer.trim());
+                    runState.results.push(testResult);
                     broadcast({type: 'test:result', data: testResult});
                 } catch {
                 }
             }
             console.log('[TCP] Reporter disconnected');
+            runState.sorted = true;
+            runState.ended = true;
             broadcast({type: 'run:sort'});
             broadcast({type: 'run:end'});
         });
